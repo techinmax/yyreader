@@ -141,6 +141,7 @@ public class MainActivity extends Activity implements OnGestureListener,
 							scale = -scale;
 						Log.i(MainActivity.class.getName(), "zoom image");
 						zoomStatus.nextZoom(scale);
+						baseValue = 0;
 						showCurrentPage();
 						return true;
 					}
@@ -165,12 +166,15 @@ public class MainActivity extends Activity implements OnGestureListener,
 	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,
 			float velocityY) {
 		// TODO Auto-generated method stub
-		if (e1.getX() + Constant.FLIPDISTANCE <= e2.getX() && currentPage > 0) {// 向右
+		if (e1.getX() + Constant.FLIPDISTANCE <= e2.getX()
+				&& Math.abs(e1.getY() - e2.getY()) < Constant.FLIPDISTANCE / 1.3
+				&& currentPage > 0) {// 向右
 			Log.i(MainActivity.class.getName(), "flip right");
 			currentPage--;
 			this.showCurrentPage();
 			return true;
 		} else if (e1.getX() >= Constant.FLIPDISTANCE + e2.getX()
+				&& Math.abs(e1.getY() - e2.getY()) < Constant.FLIPDISTANCE / 1.3
 				&& currentPage + 1 < myDoc.CountPages()) {// 向左
 			Log.i(MainActivity.class.getName(), "flip left");
 			currentPage++;
