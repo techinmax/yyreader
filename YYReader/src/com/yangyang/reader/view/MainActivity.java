@@ -6,22 +6,26 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Display;
 import android.view.GestureDetector;
+import android.view.GestureDetector.OnDoubleTapListener;
 import android.view.GestureDetector.OnGestureListener;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ImageSwitcher;
-import android.widget.ImageView;
 
 import com.foxitsdk.service.FoxitDoc;
 import com.foxitsdk.service.WrapPDFFunc;
 import com.yangyang.reader.R;
 import com.yangyang.reader.util.Constant;
+import com.yangyang.reader.util.ZoomStatus;
 import com.yangyang.reader.view.OpenFileDialog.CallbackBundle;
 
-public class MainActivity extends Activity implements OnGestureListener {
+public class MainActivity extends Activity implements OnGestureListener,
+		OnDoubleTapListener {
 
-	private ImageView imageView;
+	private PDFView imageView;
 	private ImageSwitcher switcher;
 	private GestureDetector detector;
 	private static String TAG = "YYReaer";
@@ -29,15 +33,31 @@ public class MainActivity extends Activity implements OnGestureListener {
 	public WrapPDFFunc func = null;
 	private FoxitDoc myDoc;
 	private int currentPage;
+	private ZoomStatus zoomStatus;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-
-		imageView = (ImageView) findViewById(R.id.imageView);
+		imageView = new PDFView(getApplicationContext());
+		// imageView = (ImageView) findViewById(R.id.imageView);
 		switcher = (ImageSwitcher) findViewById(R.id.imageSwitcher);
 		detector = new GestureDetector(this);
+		detector.setOnDoubleTapListener(this);
+		switcher.addView(imageView);
+		switcher.setBackgroundColor(0);
+		/**
+		 * super.onCreate(savedInstanceState); imageView = new
+		 * PDFView(getApplicationContext());
+		 * getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+		 * WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		 * this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+		 * getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+		 * WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+		 * setContentView(imageView); detector = new GestureDetector(this);
+		 * detector.setOnDoubleTapListener(this);
+		 */
 
 		// openPDF();
 	}
@@ -49,8 +69,6 @@ public class MainActivity extends Activity implements OnGestureListener {
 			String strFontFilePath = "/mnt/sdcard/DroidSansFallback.ttf";
 			String password = "";
 			int initialMemory = 5 * 1024 * 1024;
-			float xScaleFactor = 1f;
-			float yScaleFactor = 1f;
 
 			func = new WrapPDFFunc();
 			func.InitFoxitFixedMemory(initialMemory);
@@ -63,7 +81,7 @@ public class MainActivity extends Activity implements OnGestureListener {
 
 			myDoc = func.createFoxitDoc(fileName, password);
 			myDoc.CountPages();
-			showCurrentPage(xScaleFactor, yScaleFactor);
+			showCurrentPage();
 		} catch (Exception e) {
 			/*
 			 * In this demo, we decide do nothing for exceptions however, you
@@ -73,11 +91,17 @@ public class MainActivity extends Activity implements OnGestureListener {
 		}
 	}
 
-	private void showCurrentPage(float xScaleFactor, float yScaleFactor) {
-		Display display = getWindowManager().getDefaultDisplay();
-		imageView.setImageBitmap(myDoc.getPageBitmap(currentPage,
-				display.getWidth(), display.getHeight(), xScaleFactor,
-				yScaleFactor, 0));
+	private void showCurrentPage() {
+		if (this.zoomStatus == null) {
+			Display display = getWindowManager().getDefaultDisplay();
+			this.zoomStatus = new ZoomStatus(
+					(int) myDoc.GetPageSizeX(currentPage),
+					(int) myDoc.GetPageSizeY(currentPage), display.getWidth(),
+					display.getHeight());
+		}
+
+		imageView.setBitmap(myDoc.getPageBitmap(currentPage,
+				this.zoomStatus.getWidth(), this.zoomStatus.getHeight(), 0, 0));
 		imageView.invalidate();
 	}
 
@@ -92,9 +116,49 @@ public class MainActivity extends Activity implements OnGestureListener {
 		return false;
 	}
 
+	float baseValue, last_x, last_y;
+
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		// TODO Auto-generated method stub
+		// TODO Auto-generated method stub
+		// return ArtFilterActivity.this.mGestureDetector.onTouchEvent(event);
+		if (event.getAction() == MotionEvent.ACTION_DOWN) {
+			baseValue = 0;
+			last_x = event.getRawX();
+			last_y = event.getRawY();
+		} else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+			if (event.getPointerCount() == 2) {
+				float x = event.getX(0) - event.getX(1);
+				float y = event.getY(0) - event.getY(1);
+				float value = (float) Math.sqrt(x * x + y * y);// 计算两点的距离
+				if (baseValue == 0) {
+					baseValue = value;
+				} else {
+					if (value - baseValue >= 10 || value - baseValue <= -10) {
+						float scale = value / (baseValue * 10);// 当前两点间的距离除以手指落下时两点间的距离就是需要缩放的比例。
+						if (value - baseValue < -10)
+							scale = -scale;
+						Log.i(MainActivity.class.getName(), "zoom image");
+						zoomStatus.nextZoom(scale);
+						showCurrentPage();
+						return true;
+					}
+				}
+				return true;
+			} else if (event.getPointerCount() == 1) {
+				float x = event.getRawX();
+				float y = event.getRawY();
+				x -= last_x;
+				y -= last_y;
+				if (x >= 10 || y >= 10 || x <= -10 || y <= -10)
+					// img_transport(x, y); // 移动图片位置
+					last_x = event.getRawX();
+				last_y = event.getRawY();
+			}
+		} else if (event.getAction() == MotionEvent.ACTION_UP) {
+
+		}
 		return detector.onTouchEvent(event);
 	}
 
@@ -104,14 +168,14 @@ public class MainActivity extends Activity implements OnGestureListener {
 		if (e1.getX() + Constant.FLIPDISTANCE <= e2.getX() && currentPage > 0) {// 向右
 			Log.i(MainActivity.class.getName(), "flip right");
 			currentPage--;
-			this.showCurrentPage(1, 1);
+			this.showCurrentPage();
 			return true;
 		} else if (e1.getX() >= Constant.FLIPDISTANCE + e2.getX()
 				&& currentPage + 1 < myDoc.CountPages()) {// 向左
 			Log.i(MainActivity.class.getName(), "flip left");
 			currentPage++;
 
-			this.showCurrentPage(1, 1);
+			this.showCurrentPage();
 			return true;
 		} else
 			return false;
@@ -182,5 +246,28 @@ public class MainActivity extends Activity implements OnGestureListener {
 
 	private void postToLog(String msg) {
 		Log.v(TAG, msg);
+	}
+
+	@Override
+	public boolean onDoubleTap(MotionEvent e) {
+		// TODO Auto-generated method stub
+		if (this.zoomStatus != null) {
+			this.zoomStatus.nextZoom(-1);
+			this.showCurrentPage();
+			return true;
+		}
+		return false;
+	}
+
+	@Override
+	public boolean onDoubleTapEvent(MotionEvent e) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean onSingleTapConfirmed(MotionEvent e) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }
