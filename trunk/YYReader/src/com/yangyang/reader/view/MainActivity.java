@@ -1,5 +1,6 @@
 package com.yangyang.reader.view;
 
+import FoxitEMBSDK.EMBJavaSupport;
 import android.app.Activity;
 import android.app.Dialog;
 import android.os.Bundle;
@@ -11,10 +12,9 @@ import android.view.GestureDetector.OnGestureListener;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.ImageSwitcher;
 
+import com.foxitsdk.exception.memoryException;
 import com.foxitsdk.service.FoxitDoc;
 import com.foxitsdk.service.WrapPDFFunc;
 import com.yangyang.reader.R;
@@ -98,6 +98,7 @@ public class MainActivity extends Activity implements OnGestureListener,
 					(int) myDoc.GetPageSizeX(currentPage),
 					(int) myDoc.GetPageSizeY(currentPage), display.getWidth(),
 					display.getHeight());
+			func.setDisplaySize(display.getWidth(), display.getHeight());
 		}
 
 		imageView.setBitmap(myDoc.getPageBitmap(currentPage,
@@ -214,7 +215,51 @@ public class MainActivity extends Activity implements OnGestureListener,
 		case R.id.openfile:
 			showDialog(openFileDialogId);
 			return true;
+		case R.id.note:
+			try {
+				func.addAnnot(EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_NOTE);
+			} catch (memoryException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			break;
+		case R.id.fileattachment:
+			try {
+				func.addAnnot(EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_FILEATTACHMENT);
+			} catch (memoryException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			break;
+		case R.id.heilight:
+			try {
+				func.addAnnot(EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_HIGHLIGHT);
+			} catch (memoryException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			break;
+		case R.id.pencil:
+			try {
+				func.addAnnot(EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_PENCIL);
+			} catch (memoryException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			break;
+		case R.id.clearall:
+			func.deleteAnnot();
+			break;
+		case R.id.stamp:
+			try {
+				func.addAnnot(EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_STAMP);
+			} catch (memoryException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			break;
 		}
+
 		return super.onMenuItemSelected(featureId, item);
 	}
 

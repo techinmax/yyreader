@@ -39,6 +39,7 @@ public class WrapPDFFunc {
 	}
 
 	public WrapPDFFunc() {
+		this(0, 0);
 	}
 
 	public boolean InitFoxitFixedMemory(int initMemSize)
@@ -48,6 +49,11 @@ public class WrapPDFFunc {
 		EMBJavaSupport.FSUnlock("SDKEDTEMP",
 				"3C86F25880658927118E766271BEB68454E49DFD");
 		return true;
+	}
+
+	public void setDisplaySize(int x, int y) {
+		this.nDisplayX = x;
+		this.nDisplayY = y;
 	}
 
 	public FoxitDoc createFoxitDoc(String fileName, String password) {
@@ -371,12 +377,13 @@ public class WrapPDFFunc {
 		default:
 			break;
 		}
-		int filewrite = EMBJavaSupport
-				.FSFileWriteAlloc("/data/data/com.foxitsample.annotations/FoxitSaveAnnotation.pdf");
-		EMBJavaSupport.FPDFDocSaveAs(nPDFDocHandler,
-				EMBJavaSupport.EMBJavaSupport_SAVEFLAG_INCREMENTAL, 0,
-				filewrite);
-		EMBJavaSupport.FSFileWriteRelease(filewrite);
+		/*
+		 * int filewrite = EMBJavaSupport .FSFileWriteAlloc(
+		 * "/data/data/com.foxitsample.annotations/FoxitSaveAnnotation.pdf");
+		 * EMBJavaSupport.FPDFDocSaveAs(nPDFDocHandler,
+		 * EMBJavaSupport.EMBJavaSupport_SAVEFLAG_INCREMENTAL, 0, filewrite);
+		 * EMBJavaSupport.FSFileWriteRelease(filewrite);
+		 */
 		return EMBJavaSupport.EMBJavaSupport_RESULT_SUCCESS;
 	}
 
