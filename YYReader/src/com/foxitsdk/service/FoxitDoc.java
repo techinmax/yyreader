@@ -55,6 +55,10 @@ public class FoxitDoc {
 		}
 	}
 
+	public int getPageHandler(int pageIndex) {
+		return this.pageHandles[pageIndex];
+	}
+
 	// make sure unmanaged resources are cleaned up
 	protected void finalize() {
 		if (cleanUpFlag) {
