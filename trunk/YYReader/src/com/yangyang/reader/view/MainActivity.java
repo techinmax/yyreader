@@ -217,7 +217,8 @@ public class MainActivity extends Activity implements OnGestureListener,
 			return true;
 		case R.id.note:
 			try {
-				func.addAnnot(EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_NOTE);
+				func.addAnnot(myDoc.getPageHandler(currentPage),
+						EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_NOTE);
 			} catch (memoryException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -225,7 +226,8 @@ public class MainActivity extends Activity implements OnGestureListener,
 			break;
 		case R.id.fileattachment:
 			try {
-				func.addAnnot(EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_FILEATTACHMENT);
+				func.addAnnot(myDoc.getPageHandler(currentPage),
+						EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_FILEATTACHMENT);
 			} catch (memoryException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -233,7 +235,8 @@ public class MainActivity extends Activity implements OnGestureListener,
 			break;
 		case R.id.heilight:
 			try {
-				func.addAnnot(EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_HIGHLIGHT);
+				func.addAnnot(myDoc.getPageHandler(currentPage),
+						EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_HIGHLIGHT);
 			} catch (memoryException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -241,7 +244,8 @@ public class MainActivity extends Activity implements OnGestureListener,
 			break;
 		case R.id.pencil:
 			try {
-				func.addAnnot(EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_PENCIL);
+				func.addAnnot(myDoc.getPageHandler(currentPage),
+						EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_PENCIL);
 			} catch (memoryException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -252,14 +256,23 @@ public class MainActivity extends Activity implements OnGestureListener,
 			break;
 		case R.id.stamp:
 			try {
-				func.addAnnot(EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_STAMP);
+				func.addAnnot(myDoc.getPageHandler(currentPage),
+						EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_STAMP);
 			} catch (memoryException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			break;
+		case R.id.previous:
+			if (this.currentPage > 0)
+				this.currentPage--;
+			break;
+		case R.id.next:
+			if (this.currentPage < myDoc.CountPages() - 1)
+				this.currentPage++;
+			break;
 		}
-
+		this.showCurrentPage();
 		return super.onMenuItemSelected(featureId, item);
 	}
 

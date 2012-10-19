@@ -20,8 +20,6 @@ import com.foxitsdk.exception.parameterException;
  */
 
 public class WrapPDFFunc {
-	/** state variables */
-	private static final String TAG = "WrapPDFFunc";
 	private static final String fileName = "/mnt/sdcard/FoxitText.pdf";
 	private static final String password = "";
 	private int nFileRead = 0;
@@ -241,8 +239,9 @@ public class WrapPDFFunc {
 		return bm;
 	}
 
-	public int addAnnot(int nAnnotType) throws memoryException {
+	public int addAnnot(int pageHandler, int nAnnotType) throws memoryException {
 
+		this.nPDFCurPageHandler = pageHandler;
 		switch (nAnnotType) {
 
 		case EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_UNKNOWN: {
@@ -255,10 +254,10 @@ public class WrapPDFFunc {
 			pdfRect.top = 220;
 			pdfRect.right = 30;
 			pdfRect.bottom = 200;
-			int nCount = EMBJavaSupport.FPDFAnnotGetCount(nPDFCurPageHandler);
+			EMBJavaSupport.FPDFAnnotGetCount(nPDFCurPageHandler);
 			int nNoteInfoItem = EMBJavaSupport.FPDFNoteInfoAlloc("James",
 					0x0000ff, 80, pdfRect, "I like note", nPDFCurPageHandler);
-			nCount = EMBJavaSupport.FPDFAnnotGetCount(nPDFCurPageHandler);
+			EMBJavaSupport.FPDFAnnotGetCount(nPDFCurPageHandler);
 			int nIndex = EMBJavaSupport
 					.FPDFAnnotAdd(nPDFCurPageHandler,
 							EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_NOTE,
@@ -272,9 +271,8 @@ public class WrapPDFFunc {
 			deviceRect.top = 100;
 			deviceRect.right = 30;
 			deviceRect.bottom = 120;
-			int nRet = EMBJavaSupport.FPDFPageDeviceToPageRectF(
-					nPDFCurPageHandler, 0, 0, nDisplayX, nDisplayY, 0,
-					deviceRect);
+			EMBJavaSupport.FPDFPageDeviceToPageRectF(nPDFCurPageHandler, 0, 0,
+					nDisplayX, nDisplayY, 0, deviceRect);
 			deviceRect.right = deviceRect.left + 20;
 			deviceRect.bottom = deviceRect.top - 20;
 			nNoteInfoItem = EMBJavaSupport.FPDFNoteInfoAlloc("James", 0xff00ff,
@@ -292,7 +290,7 @@ public class WrapPDFFunc {
 		case EMBJavaSupport.EMBJavaSupport_ANNOTTYPE_HIGHLIGHT: {
 
 			int TextPage = EMBJavaSupport.FPDFTextLoadPage(nPDFCurPageHandler);
-			int nRectNum = EMBJavaSupport.FPDFTextCountRects(TextPage, 0, 5);
+			EMBJavaSupport.FPDFTextCountRects(TextPage, 0, 5);
 			RectangleF rect = EMBJavaSupport.FPDFTextGetRect(TextPage, 0);
 			EMBJavaSupport.FPDFTextCloseTextPage(TextPage);
 			int nQuadsCount = 1;
