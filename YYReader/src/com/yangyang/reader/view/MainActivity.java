@@ -271,6 +271,10 @@ public class MainActivity extends Activity implements OnGestureListener,
 			if (this.currentPage < myDoc.CountPages() - 1)
 				this.currentPage++;
 			break;
+		case R.id.link:
+			int textPage = EMBJavaSupport.FPDFTextLoadPage(myDoc.getPageHandler(this.currentPage));
+			EMBJavaSupport.FPDFLinkOpenLink(textPage, 0, 0);
+			EMBJavaSupport.FPDFTextCloseTextPage(textPage);
 		}
 		this.showCurrentPage();
 		return super.onMenuItemSelected(featureId, item);

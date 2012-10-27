@@ -224,4 +224,6 @@ public class EMBJavaSupport {
 	public static native float FPDFPageGetSizeY(int pageHandle)
 			throws parameterException;
 
+	public static native int FPDFLinkOpenLink(int textpage, int x, int y);
+
 }
