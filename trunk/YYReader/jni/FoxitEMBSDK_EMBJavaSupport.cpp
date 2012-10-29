@@ -3125,31 +3125,54 @@ throwException(pEnv,cls,nRet,"FPDFSignatureClear:  have some errors");
 }
 }
 
-JNIEXPORT jint JNICALL Java_FoxitEMBSDK_EMBJavaSupport_FPDFLinkOpenLink(
+JNIEXPORT jstring JNICALL Java_FoxitEMBSDK_EMBJavaSupport_FPDFLinkOpenLink(
 JNIEnv *pEvn, jclass cls, jint pageHandle, jint x, jint y) {
-LOGI("Java_FoxitEMBSDK_EMBJavaSupport_FPDFLinkOpenLink");
+LOGI("Java_FoxitEMBSDK_EMBJavaSupport_FPDFLinkOpenLink, x:%d,y:%d", x, y);
 FPDF_PAGELINK* pPageLink = NULL;
-FS_INT32 count = -1;
+FS_INT32 count = -1, rectCount = 0;
 jint nRet = FS_Memory_Alloc(sizeof(FPDF_PAGELINK), (FS_LPVOID*) &pPageLink);
-FS_Memory_Free(pPageLink);
 nRet = FPDF_Link_LoadWebLinks((FPDF_TEXTPAGE) pageHandle, pPageLink);
 FPDF_Link_CountWebLinks(*pPageLink, &count);
 LOGI("Web Link = %x", count);
 FS_DWORD bufflen = 0;
 FPDF_URLDEST* buffer = NULL;
+FS_POINTF * points = NULL;
+FS_Memory_Alloc(sizeof(FS_POINTF) * 4, (FS_LPVOID*) &points);
 FS_Memory_Alloc(sizeof(FPDF_URLDEST), (FS_LPVOID*) &buffer);
+jstring result = (jstring)(pEvn)->NewStringUTF("");
 for (int i = 0; i < count; i++) {
-FPDF_Link_GetDest(*pPageLink, i, NULL, &bufflen);
-LOGI("url:%x", bufflen);
-FPDF_Link_GetDest(*pPageLink, i, buffer, NULL);
-(buffer->url)[bufflen] = '\0';
-LOGI("url:%s", buffer->url);
-FS_Memory_Free(buffer->url);
+bufflen = 0;
+FPDF_Link_CountRects(*pPageLink, i, &rectCount);
+bool inRect = false;
+
+for (int j = 0; j < rectCount; j++) {
+FPDF_Link_GetRect(*pPageLink, i, j, points);
+LOGI(
+"x1:%f,y1:%f,x2:%f,y2:%f,x3:%f,y3:%f,x4:%f,y4:%f", points[0].x, points[0].y, points[1].x, points[1].y, points[2].x, points[2].y, points[3].x, points[3].y);
+if (x >= points[0].x && x <= points[2].x && y >= points[0].y
+&& y <= points[2].y) {
+LOGI("in rect");
+inRect = true;
+break;
 }
-LOGI("Web Link = %x", count);
+}
+FPDF_Link_GetDest(*pPageLink, i, NULL, &bufflen);
+FS_Memory_Alloc(sizeof(FS_WCHAR) * (bufflen + 1),
+(FS_LPVOID*) (&(buffer->url)));
+FPDF_Link_GetDest(*pPageLink, i, buffer, &bufflen);
+LOGI("urllen:%x,rectcount:%d,url:%s", bufflen, rectCount, buffer->url);
+if (inRect) {
+result = (pEvn)->NewStringUTF(buffer->url);
+}
+FS_Memory_Free(buffer->url);
+buffer->url = NULL;
+if (inRect)
+break;
+}
 FS_Memory_Free(buffer);
+FS_Memory_Free(points);
 nRet = FPDF_Link_CloseWebLinks(*pPageLink);
 FS_Memory_Free(pPageLink);
 
-return nRet;
+return result;
 }
