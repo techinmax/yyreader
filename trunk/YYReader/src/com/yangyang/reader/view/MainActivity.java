@@ -1,8 +1,11 @@
 package com.yangyang.reader.view;
 
 import FoxitEMBSDK.EMBJavaSupport;
+import FoxitEMBSDK.EMBJavaSupport.PointF;
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Display;
@@ -12,6 +15,7 @@ import android.view.GestureDetector.OnGestureListener;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.Window;
 import android.widget.ImageSwitcher;
 
 import com.foxitsdk.exception.memoryException;
@@ -34,6 +38,7 @@ public class MainActivity extends Activity implements OnGestureListener,
 	private FoxitDoc myDoc;
 	private int currentPage;
 	private ZoomStatus zoomStatus;
+	private int contentTop;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -60,9 +65,12 @@ public class MainActivity extends Activity implements OnGestureListener,
 		 */
 
 		// openPDF();
+
 	}
 
 	public void openPDF(String fileName) {
+		this.contentTop = getWindow().findViewById(Window.ID_ANDROID_CONTENT)
+				.getTop();
 		try {
 			// String fileName = "/data/data/com.foxitsample.service/demo.pdf";
 			// String fileName = "/mnt/sdcard/readme.pdf";
@@ -188,7 +196,7 @@ public class MainActivity extends Activity implements OnGestureListener,
 
 	public void onLongPress(MotionEvent e) {
 		// TODO Auto-generated method stub
-
+		this.openWebLink((int) e.getX(), (int) e.getY());
 	}
 
 	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX,
@@ -272,12 +280,32 @@ public class MainActivity extends Activity implements OnGestureListener,
 				this.currentPage++;
 			break;
 		case R.id.link:
-			int textPage = EMBJavaSupport.FPDFTextLoadPage(myDoc.getPageHandler(this.currentPage));
-			EMBJavaSupport.FPDFLinkOpenLink(textPage, 0, 0);
-			EMBJavaSupport.FPDFTextCloseTextPage(textPage);
+			this.openWebLink(0, 0);
+			return true;
 		}
 		this.showCurrentPage();
 		return super.onMenuItemSelected(featureId, item);
+	}
+
+	private void openWebLink(int x, int y) {
+		PointF point = new EMBJavaSupport().new PointF();
+		point.x = x;
+		point.y = y;
+		int textPage = EMBJavaSupport.FPDFTextLoadPage(myDoc
+				.getPageHandler(this.currentPage));
+		EMBJavaSupport.FPDFPageDeviceToPagePointF(
+				myDoc.getPageHandler(this.currentPage), 0, contentTop,
+				zoomStatus.getDisplayWidth(), zoomStatus.getDisplayHeight(), 0,
+				point);
+		String url = EMBJavaSupport.FPDFLinkOpenLink(textPage, (int) point.x,
+				(int) point.y);
+		Log.i("link", url);
+		if (url.length() > 0) {
+			Intent it = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+			startActivity(it);
+
+		}
+		EMBJavaSupport.FPDFTextCloseTextPage(textPage);
 	}
 
 	@Override
