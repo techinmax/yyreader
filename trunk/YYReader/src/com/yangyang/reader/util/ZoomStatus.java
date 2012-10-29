@@ -82,7 +82,7 @@ public class ZoomStatus {
 	}
 
 	public void nextZoom(float scale) {
-		if (scale > 0) {
+		if (scale != 0) {
 			this.scale += scale;
 			if (this.scale > scaleMAX)
 				this.scale = scaleMAX;

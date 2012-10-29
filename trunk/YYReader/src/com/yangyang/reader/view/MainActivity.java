@@ -145,10 +145,11 @@ public class MainActivity extends Activity implements OnGestureListener,
 					baseValue = value;
 				} else {
 					if (value - baseValue >= 10 || value - baseValue <= -10) {
-						float scale = value / (baseValue * 10);// 当前两点间的距离除以手指落下时两点间的距离就是需要缩放的比例。
+						float scale = value / (baseValue * 20);// 当前两点间的距离除以手指落下时两点间的距离就是需要缩放的比例。
 						if (value - baseValue < -10)
 							scale = -scale;
-						Log.i(MainActivity.class.getName(), "zoom image");
+						Log.i(MainActivity.class.getName(), "zoom image:"
+								+ scale);
 						zoomStatus.nextZoom(scale);
 						baseValue = 0;
 						showCurrentPage();
@@ -346,7 +347,7 @@ public class MainActivity extends Activity implements OnGestureListener,
 	public boolean onDoubleTap(MotionEvent e) {
 		// TODO Auto-generated method stub
 		if (this.zoomStatus != null) {
-			this.zoomStatus.nextZoom(-1);
+			this.zoomStatus.nextZoom(0);
 			this.showCurrentPage();
 			return true;
 		}
