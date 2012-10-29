@@ -1,6 +1,32 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    <item android:id="@+id/openfile" android:title="@string/openfile"></item>
-    <item android:id="@+id/previous" android:title="@string/previous"></item>
-    <item android:id="@+id/next" android:title="@string/next"></item>
+
+    <item
+        android:id="@+id/openfile"
+        android:title="@string/openfile">
+    </item>
+    <item
+        android:id="@+id/previous"
+        android:title="@string/previous">
+    </item>
+    <item
+        android:id="@+id/next"
+        android:title="@string/next">
+    </item>
+
+    <group android:id="@+id/annotations" >
+        <item android:id="@+id/note" android:title="add note">
+        </item>
+        <item android:id="@+id/pencil" android:title="add pencil">
+        </item>
+        <item android:id="@+id/heilight" android:title="heilight">
+        </item>
+        <item android:id="@+id/stamp" android:title="stamp">
+        </item>
+        <item android:id="@+id/fileattachment" android:title="fileattachment">
+        </item>
+        <item android:id="@+id/clearall" android:title="clearall">
+        </item>
+        <item android:id="@+id/link" android:title="link"></item>
+    </group>
 
 </menu>
