@@ -78,6 +78,10 @@ public class EMBJavaSupport {
 		public float right;
 		public float bottom;
 	}
+	
+	public class PointF{
+		public float x,y;
+	}
 
 	// //////////////////
 	// View Module
@@ -224,6 +228,9 @@ public class EMBJavaSupport {
 	public static native float FPDFPageGetSizeY(int pageHandle)
 			throws parameterException;
 
-	public static native int FPDFLinkOpenLink(int textpage, int x, int y);
+	public static native String FPDFLinkOpenLink(int textpage, int x, int y);
+
+	public static native void FPDFPageDeviceToPagePointF(int pageHandler,int x, int y,
+			int width, int hegith,int rotate, PointF point);
 
 }
