@@ -3125,7 +3125,7 @@ throwException(pEnv,cls,nRet,"FPDFSignatureClear:  have some errors");
 }
 }
 
-JNIEXPORT jstring JNICALL Java_FoxitEMBSDK_EMBJavaSupport_FPDFLinkOpenLink(
+JNIEXPORT jstring JNICALL Java_FoxitEMBSDK_EMBJavaSupport_FPDFLinkOpenOuterLink(
 JNIEnv *pEvn, jclass cls, jint pageHandle, jint x, jint y) {
 LOGI("Java_FoxitEMBSDK_EMBJavaSupport_FPDFLinkOpenLink, x:%d,y:%d", x, y);
 FPDF_PAGELINK* pPageLink = NULL;
@@ -3175,4 +3175,85 @@ nRet = FPDF_Link_CloseWebLinks(*pPageLink);
 FS_Memory_Free(pPageLink);
 
 return result;
+}
+
+JNIEXPORT jint JNICALL Java_FoxitEMBSDK_EMBJavaSupport_FPDFLinkOpenInnerLink(
+JNIEnv *pEvn, jclass cls, jint document, jint pageHandle, jint x, jint y) {
+jint pageNumber = -1;
+FS_INT32 linkCount = 0;
+FPDF_ANNOT pAnnot = NULL;
+FPDF_ACTION pAction = NULL;
+FPDF_Annot_GetLinkCount((FPDF_PAGE) pageHandle, &linkCount);
+FS_Memory_Alloc(sizeof(FPDF_ANNOT), (FS_LPVOID*) &pAnnot);
+FS_Memory_Alloc(sizeof(FPDF_ACTION), (FS_LPVOID*) &pAction);
+pAnnot->pData = NULL;
+pAction->pData = NULL;
+FPDF_Annot_GetAtPos((FPDF_PAGE) pageHandle, x, y, &pAnnot);
+LOGI("CALL FPDFLinkOpenInnerLink x:%d,y:%d,linkcount:%d", x, y, linkCount);
+
+FS_POINTF *points = NULL;
+FS_Memory_Alloc(sizeof(FS_POINTF) * 4, (FS_LPVOID*) &points);
+bool inRect = false;
+for (FS_INT32 i = 0; i < linkCount; i++) {
+FPDF_Annot_GetLink((FPDF_PAGE) pageHandle, i, &pAnnot);
+FPDF_Annot_GetLinkArea((FPDF_PAGE) pageHandle, pAnnot, 0, points);
+
+LOGI(
+"x1:%f,y1:%f,x2:%f,y2:%f,x3:%f,y3:%f,x4:%f,y4:%f", points[0].x, points[0].y, points[1].x, points[1].y, points[2].x, points[2].y, points[3].x, points[3].y);
+if (x >= points[0].x && x <= points[2].x && y >= points[0].y
+&& y <= points[2].y) {
+LOGI("in rect");
+inRect = true;
+break;
+}
+}
+FS_Memory_Free(points);
+
+if (inRect) {
+LOGI("found link data");
+FS_INT32 type = 0;
+FS_DWORD bufferlen = 0;
+FPDF_Annot_GetLinkAction((FPDF_PAGE) pageHandle, pAnnot, &pAction);
+FPDF_Action_GetType((FPDF_DOCUMENT) document, pAction, &type, &bufferlen);
+switch (type) {
+case FPDF_DEST_NONE:
+LOGI("FPDF_DEST_NONE");
+break;
+case FPDF_DEST_PAGE: {
+LOGI("FPDF_DEST_PAGE,bufferlen:%d", bufferlen);
+FS_LPVOID pBuffer = NULL;
+FS_Memory_Alloc(bufferlen + 1, (FS_LPVOID*) &pBuffer);
+FPDF_Action_GetData((FPDF_DOCUMENT) document, pAction, pBuffer);
+pageNumber = ((FPDF_DEST* const ) pBuffer)->page_index;
+FS_Memory_Free(pBuffer);
+LOGI("==ok1");
+}
+break;
+case FPDF_DEST_DOC:
+LOGI("FPDF_DEST_DOC");
+break;
+case FPDF_DEST_URL:
+LOGI("FPDF_DEST_URL");
+break;
+case FPDF_ACTION_LAUNCH:
+LOGI("FPDF_ACTION_LAUNCH");
+break;
+default:
+LOGI("error link enum %d", type);
+break;
+}
+LOGI("==ok2");
+//FS_Memory_Free(pAction->pData);
+//FS_Memory_Free(pAnnot->pData);
+LOGI("==ok3");
+//pAction->pData = NULL;
+//pAnnot->pData = NULL;
+} else {
+LOGI("no link data");
+}
+LOGI("==ok4");
+FS_Memory_Free(pAction);
+FS_Memory_Free(pAnnot);
+LOGI("==ok5");
+return pageNumber;
 }
