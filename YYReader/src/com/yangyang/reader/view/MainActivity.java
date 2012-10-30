@@ -298,13 +298,22 @@ public class MainActivity extends Activity implements OnGestureListener,
 				myDoc.getPageHandler(this.currentPage), 0, contentTop,
 				zoomStatus.getDisplayWidth(), zoomStatus.getDisplayHeight(), 0,
 				point);
-		String url = EMBJavaSupport.FPDFLinkOpenLink(textPage, (int) point.x,
-				(int) point.y);
+		String url = EMBJavaSupport.FPDFLinkOpenOuterLink(textPage,
+				(int) point.x, (int) point.y);
 		Log.i("link", url);
 		if (url.length() > 0) {
 			Intent it = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
 			startActivity(it);
 
+		} else {
+			int pageNumber = EMBJavaSupport.FPDFLinkOpenInnerLink(
+					myDoc.getDocumentHandle(),
+					myDoc.getPageHandler(this.currentPage), (int) point.x,
+					(int) point.y);
+			if (pageNumber > 0) {
+				this.currentPage = pageNumber;
+				this.showCurrentPage();
+			}
 		}
 		EMBJavaSupport.FPDFTextCloseTextPage(textPage);
 	}
