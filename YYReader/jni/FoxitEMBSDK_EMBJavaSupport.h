@@ -1254,8 +1254,16 @@ JNIEXPORT void JNICALL Java_FoxitEMBSDK_EMBJavaSupport_FPDFSignatureRemove
  * Method:    FPDFLinkOpenLink
  * Signature: (III)I
  */
-JNIEXPORT jstring JNICALL Java_FoxitEMBSDK_EMBJavaSupport_FPDFLinkOpenLink(
+JNIEXPORT jstring JNICALL Java_FoxitEMBSDK_EMBJavaSupport_FPDFLinkOpenOuterLink(
 		JNIEnv *, jclass, jint, jint, jint);
+
+/*
+ * Class:     FoxitEMBSDK_EMBJavaSupport
+ * Method:    FPDFLinkOpenInnerLink
+ * Signature: (III)I
+ */
+JNIEXPORT jint JNICALL Java_FoxitEMBSDK_EMBJavaSupport_FPDFLinkOpenInnerLink(
+		JNIEnv *, jclass, jint,jint, jint, jint);
 
 #ifdef __cplusplus
 }
