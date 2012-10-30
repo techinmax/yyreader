@@ -42,6 +42,10 @@ public class FoxitDoc {
 		instanceCounter++;
 	}
 
+	public int getDocumentHandle() {
+		return this.docHandle;
+	}
+
 	/* helper functions */
 	protected void InitPage(int pageIndex) {
 		try {
