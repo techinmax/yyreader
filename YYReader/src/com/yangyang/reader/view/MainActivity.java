@@ -2,9 +2,11 @@ package com.yangyang.reader.view;
 
 import FoxitEMBSDK.EMBJavaSupport;
 import FoxitEMBSDK.EMBJavaSupport.PointF;
+import FoxitEMBSDK.EMBJavaSupport.RectangleF;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -15,6 +17,9 @@ import android.view.GestureDetector.OnGestureListener;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.View;
+import android.view.WindowManager;
+import android.view.View.OnTouchListener;
 import android.view.Window;
 import android.widget.ImageSwitcher;
 
@@ -27,10 +32,10 @@ import com.yangyang.reader.util.ZoomStatus;
 import com.yangyang.reader.view.OpenFileDialog.CallbackBundle;
 
 public class MainActivity extends Activity implements OnGestureListener,
-		OnDoubleTapListener {
+		OnDoubleTapListener, OnTouchListener {
 
 	private PDFView imageView;
-	private ImageSwitcher switcher;
+	// private ImageSwitcher switcher;
 	private GestureDetector detector;
 	private static String TAG = "YYReaer";
 	private final static int openFileDialogId = 10212739;
@@ -38,20 +43,29 @@ public class MainActivity extends Activity implements OnGestureListener,
 	private FoxitDoc myDoc;
 	private int currentPage;
 	private ZoomStatus zoomStatus;
-	private int contentTop;
+	private int contentTop = 0;
+	boolean editMode = false;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
-		imageView = new PDFView(getApplicationContext());
+		// setContentView(R.layout.activity_main);
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+				WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+				WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+		imageView = new PDFView(this);
+		setContentView(imageView);
 		// imageView = (ImageView) findViewById(R.id.imageView);
-		switcher = (ImageSwitcher) findViewById(R.id.imageSwitcher);
+		// switcher = (ImageSwitcher) findViewById(R.id.imageSwitcher);
 		detector = new GestureDetector(this);
 		detector.setOnDoubleTapListener(this);
-		switcher.addView(imageView);
-		switcher.setBackgroundColor(0);
+		// switcher.addView(imageView);
+		// switcher.setBackgroundColor(0);
+		imageView.setOnTouchListener(this);
 		/**
 		 * super.onCreate(savedInstanceState); imageView = new
 		 * PDFView(getApplicationContext());
@@ -69,8 +83,8 @@ public class MainActivity extends Activity implements OnGestureListener,
 	}
 
 	public void openPDF(String fileName) {
-		this.contentTop = getWindow().findViewById(Window.ID_ANDROID_CONTENT)
-				.getTop();
+		// this.contentTop = getWindow().findViewById(Window.ID_ANDROID_CONTENT)
+		// .getTop();
 		try {
 			// String fileName = "/data/data/com.foxitsample.service/demo.pdf";
 			// String fileName = "/mnt/sdcard/readme.pdf";
@@ -78,7 +92,7 @@ public class MainActivity extends Activity implements OnGestureListener,
 			String password = "";
 			int initialMemory = 5 * 1024 * 1024;
 
-			func = new WrapPDFFunc();
+			func = new WrapPDFFunc(this);
 			func.InitFoxitFixedMemory(initialMemory);
 			func.LoadJbig2Decoder();
 			func.LoadJpeg2000Decoder();
@@ -88,6 +102,7 @@ public class MainActivity extends Activity implements OnGestureListener,
 			func.SetFontFileMap(strFontFilePath);
 
 			myDoc = func.createFoxitDoc(fileName, password);
+			func.InitPDFDoc(myDoc.getDocumentHandle());
 			myDoc.CountPages();
 			showCurrentPage();
 		} catch (Exception e) {
@@ -109,9 +124,44 @@ public class MainActivity extends Activity implements OnGestureListener,
 			func.setDisplaySize(display.getWidth(), display.getHeight());
 		}
 
-		imageView.setBitmap(myDoc.getPageBitmap(currentPage,
-				this.zoomStatus.getWidth(), this.zoomStatus.getHeight(), 0, 0));
-		imageView.invalidate();
+		if (!this.editMode)
+			imageView.setPDFBitmap(myDoc.getPageBitmap(currentPage,
+					this.zoomStatus.getWidth(), this.zoomStatus.getHeight(), 0,
+					0), this.zoomStatus.getDisplayWidth(), this.zoomStatus
+					.getDisplayHeight());
+		else
+			imageView.setPDFBitmap(
+					myDoc.getPageBitmap(currentPage,
+							this.zoomStatus.getDisplayWidth(),
+							this.zoomStatus.getDisplayHeight(), 0, 0),
+					this.zoomStatus.getDisplayWidth(),
+					this.zoomStatus.getDisplayHeight());
+		func.setPageHandler(myDoc.getPageHandler(currentPage));
+		// imageView.invalidate();
+		imageView.OnDraw();
+	}
+
+	public void invalidate(float left, float top, float right, float bottom) {
+		int l, t, r, b;
+		RectangleF rect = new EMBJavaSupport().new RectangleF();
+		rect.left = left;
+		rect.top = top;
+		rect.right = right;
+		rect.bottom = bottom;
+		EMBJavaSupport.FPDFPagePageToDeviceRectF(func.getCurPDFPageHandler(),
+				0, 0, this.zoomStatus.getDisplayWidth(),
+				this.zoomStatus.getDisplayHeight(), 0, rect);
+		l = (int) rect.left;
+		t = (int) rect.top;
+		r = (int) rect.right;
+		b = (int) rect.bottom;
+		Rect rc = new Rect(l, t, r, b);
+		imageView.setDirtyRect(l, t, r, b);
+		imageView.setDirtyBitmap(func.getDirtyBitmap(rc,
+				this.zoomStatus.getDisplayWidth(),
+				this.zoomStatus.getDisplayHeight()));
+		imageView.OnDraw();
+
 	}
 
 	@Override
@@ -283,6 +333,10 @@ public class MainActivity extends Activity implements OnGestureListener,
 		case R.id.link:
 			this.openWebLink(0, 0);
 			return true;
+		case R.id.edit:
+			this.editMode = !this.editMode;
+			item.setTitle(this.editMode ? "unlock" : "edit");
+			break;
 		}
 		this.showCurrentPage();
 		return super.onMenuItemSelected(featureId, item);
@@ -373,5 +427,72 @@ public class MainActivity extends Activity implements OnGestureListener,
 	public boolean onSingleTapConfirmed(MotionEvent e) {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	@Override
+	public boolean onTouch(View v, MotionEvent event) {
+		// TODO Auto-generated method stub
+		if (this.editMode) {
+			int actionType = event.getAction() & MotionEvent.ACTION_MASK;
+			int actionId = event.getAction()
+					& MotionEvent.ACTION_POINTER_ID_MASK;
+			actionId = actionId >> 8;
+
+			PointF point = new EMBJavaSupport().new PointF();
+			point.x = event.getX();
+			point.y = event.getY();
+			EMBJavaSupport.FPDFPageDeviceToPagePointF(
+					func.getCurPDFPageHandler(), 0, contentTop,
+					zoomStatus.getDisplayWidth(),
+					zoomStatus.getDisplayHeight(), 0, point);
+
+			switch (actionType) {
+			case MotionEvent.ACTION_MOVE://
+				EMBJavaSupport.FPDFFormFillOnMouseMove(
+						func.getPDFFormHandler(), func.getCurPDFPageHandler(),
+						0, point.x, point.y);
+				break;
+			case MotionEvent.ACTION_DOWN: //
+				EMBJavaSupport.FPDFFormFillOnMouseMove(
+						func.getPDFFormHandler(), func.getCurPDFPageHandler(),
+						0, point.x, point.y);
+				EMBJavaSupport.FPDFFormFillOnLButtonDown(
+						func.getPDFFormHandler(), func.getCurPDFPageHandler(),
+						0, point.x, point.y);
+				break;
+			case MotionEvent.ACTION_UP: //
+				EMBJavaSupport.FPDFFormFillOnLButtonUp(
+						func.getPDFFormHandler(), func.getCurPDFPageHandler(),
+						0, point.x, point.y);
+				break;
+			}
+			return true;
+		}
+		return false;
+	}
+
+	public void createAndroidTextField(String text) {
+		Intent intent = new Intent();
+		Bundle bundle = new Bundle();
+		bundle.putString("textValue", text);
+		intent.setClass(this, textfieldActivity.class);
+		intent.putExtra("key", bundle);
+		this.startActivityForResult(intent, 0);
+	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (resultCode == RESULT_OK && requestCode == 0) {
+			Bundle bundle = data.getBundleExtra("Result");
+			String text = bundle.getString("ResultValue");
+			Log.i("info", text);
+			String result = ""
+					+ EMBJavaSupport.FPDFFormFillOnSetText(
+							func.getPDFFormHandler(),
+							func.getCurPDFPageHandler(), text, 0);
+			Log.i("result:", result);
+		}
+		super.onActivityResult(requestCode, resultCode, data);
+		// this.showCurrentPage();
 	}
 }
