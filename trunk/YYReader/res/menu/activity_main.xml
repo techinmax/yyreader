@@ -28,5 +28,6 @@
         </item>
         <item android:id="@+id/link" android:title="link"></item>
     </group>
+    <item android:id="@+id/edit" android:title="edit"></item>
 
 </menu>

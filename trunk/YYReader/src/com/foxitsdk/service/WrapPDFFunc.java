@@ -5,12 +5,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import FoxitEMBSDK.EMBJavaSupport;
+import FoxitEMBSDK.EMBJavaSupport.CPDFFormFillerInfo;
+import FoxitEMBSDK.EMBJavaSupport.CPDFJsPlatform;
 import FoxitEMBSDK.EMBJavaSupport.RectangleF;
 import android.graphics.Bitmap;
+import android.graphics.Rect;
 
 import com.foxitsdk.exception.invalidLicenseException;
 import com.foxitsdk.exception.memoryException;
 import com.foxitsdk.exception.parameterException;
+import com.yangyang.reader.view.MainActivity;
 
 /**
  * defined for a wrap for All PDF implements��
@@ -29,15 +33,52 @@ public class WrapPDFFunc {
 	private int nDisplayY = 0;
 	private List<Integer> arrIndexList = null;
 
+	/** form */
+	private MainActivity mainView = null;
+	private CPDFFormFillerInfo formFillerInfo = null;
+	private int nPDFFormFillerInfo = 0;
+	private CPDFJsPlatform jsPlatform = null;
+	private int nPDFJsPlatform = 0;
+	private int nPDFFormHandler = 0;
+
 	/** */
-	public WrapPDFFunc(int x, int y) {
+	public WrapPDFFunc(int x, int y, MainActivity context) {
 		nDisplayX = x;
 		nDisplayY = y;
+		this.mainView = context;
 		arrIndexList = new ArrayList<Integer>();
 	}
 
-	public WrapPDFFunc() {
-		this(0, 0);
+	public WrapPDFFunc(MainActivity context) {
+		this(0, 0, context);
+	}
+
+	public int getPageHandler(int nPageIndex) {
+		if (nPDFDocHandler == 0) {
+			return EMBJavaSupport.EMBJavaSupport_RESULT_ERROR;
+		}
+
+		if (nPageIndex == 0 && nPDFCurPageHandler != 0)
+			return nPDFCurPageHandler;
+
+		int nPageHandler = 0;
+		try {
+			nPageHandler = EMBJavaSupport.FPDFPageLoad(nPDFDocHandler,
+					nPageIndex);
+
+			EMBJavaSupport.FPDFPageStartParse(nPageHandler, 0, 0);
+
+			// /formfiller implemention
+			// EMBJavaSupport.FPDF_FormFill_OnAfterLoadPage(nPageHandler,
+			// nPDFFormHandler);
+			EMBJavaSupport.FPDFFormFillOnAfterLoadPage(nPDFFormHandler,
+					nPageHandler);
+			// /
+		} catch (Exception e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		return nPageHandler;
 	}
 
 	public boolean InitFoxitFixedMemory(int initMemSize)
@@ -46,6 +87,30 @@ public class WrapPDFFunc {
 		EMBJavaSupport.FSInitLibrary(0);
 		EMBJavaSupport.FSUnlock("SDKEDTEMP",
 				"3C86F25880658927118E766271BEB68454E49DFD");
+
+		// ///////formfiller implemention
+		if (mainView == null)
+			return false;
+		formFillerInfo = new EMBJavaSupport().new CPDFFormFillerInfo(mainView);
+		if (formFillerInfo == null)
+			return false;
+		nPDFFormFillerInfo = EMBJavaSupport
+				.FPDFFormFillerInfoAlloc(formFillerInfo);
+		if (nPDFFormFillerInfo == 0)
+			return false;
+
+		jsPlatform = new EMBJavaSupport().new CPDFJsPlatform();
+		if (jsPlatform == null)
+			return false;
+		nPDFJsPlatform = EMBJavaSupport.FPDFJsPlatformAlloc(jsPlatform);
+		if (nPDFJsPlatform == 0)
+			return false;
+
+		EMBJavaSupport.FPDFFormFillerInfoSetJsPlatform(nPDFFormFillerInfo,
+				nPDFJsPlatform);
+		EMBJavaSupport.FPDFJsPlatformSetFormFillerInfo(nPDFJsPlatform,
+				nPDFFormFillerInfo);
+
 		return true;
 	}
 
@@ -113,18 +178,23 @@ public class WrapPDFFunc {
 	}
 
 	/** Load PDF Document. */
-	public int InitPDFDoc() {
+	public int InitPDFDoc(int nPDFDocHandler) {
 
 		/** Init a FS_FileRead structure */
-		try {
-			nFileRead = EMBJavaSupport.FSFileReadAlloc(fileName);
-			nPDFDocHandler = EMBJavaSupport.FPDFDocLoad(nFileRead, password);
-			if (nPDFDocHandler == 0) {
-				return EMBJavaSupport.EMBJavaSupport_RESULT_ERROR;
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		// try {
+		// nFileRead = EMBJavaSupport.FSFileReadAlloc(fileName);
+		// nPDFDocHandler = EMBJavaSupport.FPDFDocLoad(nFileRead, password);
+		// if (nPDFDocHandler == 0) {
+		// return EMBJavaSupport.EMBJavaSupport_RESULT_ERROR;
+		// }
+		// } catch (Exception e) {
+		// e.printStackTrace();
+		// }
+		this.nPDFDocHandler = nPDFDocHandler;
+		nPDFFormHandler = EMBJavaSupport.FPDFDocInitFormFillEnviroument(
+				nPDFDocHandler, nPDFFormFillerInfo);
+		if (nPDFFormHandler == 0)
+			return -1;
 		return EMBJavaSupport.EMBJavaSupport_RESULT_SUCCESS;
 	}
 
@@ -164,6 +234,8 @@ public class WrapPDFFunc {
 			}
 
 			EMBJavaSupport.FPDFPageStartParse(nPDFCurPageHandler, 0, 0);
+			EMBJavaSupport.FPDFFormFillOnAfterLoadPage(nPDFFormHandler,
+					nPDFCurPageHandler);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -204,6 +276,57 @@ public class WrapPDFFunc {
 		}
 
 		return nPageCount;
+	}
+
+	public int getCurPDFPageHandler() {
+		return nPDFCurPageHandler;
+	}
+
+	public int getPDFFormHandler() {
+		return nPDFFormHandler;
+	}
+
+	public void setPageHandler(int pageHandler) {
+		this.nPDFCurPageHandler = pageHandler;
+	}
+
+	public Bitmap getDirtyBitmap(Rect rect, int nSizex, int nSizey) {
+		Bitmap bm = null;
+		if (nPDFCurPageHandler == 0) {
+			return null;
+		}
+
+		bm = Bitmap.createBitmap(rect.width(), rect.height(),
+				Bitmap.Config.ARGB_8888);
+		int dib;
+		try {
+			dib = EMBJavaSupport.FSBitmapCreate(rect.width(), rect.height(), 7,
+					null, 0);
+
+			EMBJavaSupport.FSBitmapFillColor(dib, 0xff);
+			EMBJavaSupport.FPDFRenderPageStart(dib, nPDFCurPageHandler,
+					-rect.left, -rect.top, nSizex, nSizey, 0, 0, null, 0);
+
+			// /formfiller implemention
+			if (nPDFFormHandler == 0)
+				return null;
+			EMBJavaSupport.FPDFFormFillDraw(nPDFFormHandler, dib,
+					nPDFCurPageHandler, -rect.left, -rect.top, nSizex, nSizey,
+					0, 0);
+			// /
+
+			byte[] bmpbuf = EMBJavaSupport.FSBitmapGetBuffer(dib);
+
+			ByteBuffer bmBuffer = ByteBuffer.wrap(bmpbuf);
+			bm.copyPixelsFromBuffer(bmBuffer);
+
+			EMBJavaSupport.FSBitmapDestroy(dib);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return bm;
 	}
 
 	/** Render pdf to bitmap. */
