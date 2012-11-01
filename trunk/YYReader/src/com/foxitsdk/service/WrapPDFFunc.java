@@ -7,9 +7,11 @@ import java.util.List;
 import FoxitEMBSDK.EMBJavaSupport;
 import FoxitEMBSDK.EMBJavaSupport.CPDFFormFillerInfo;
 import FoxitEMBSDK.EMBJavaSupport.CPDFJsPlatform;
+import FoxitEMBSDK.EMBJavaSupport.CPDFPSI;
 import FoxitEMBSDK.EMBJavaSupport.RectangleF;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
+import android.util.Log;
 
 import com.foxitsdk.exception.invalidLicenseException;
 import com.foxitsdk.exception.memoryException;
@@ -40,6 +42,12 @@ public class WrapPDFFunc {
 	private CPDFJsPlatform jsPlatform = null;
 	private int nPDFJsPlatform = 0;
 	private int nPDFFormHandler = 0;
+	
+	/**psi*/
+	private CPDFPSI fxPsi = null;
+	private int nPSICallback = 0;
+	private int nPSIHandle = 0;
+
 
 	/** */
 	public WrapPDFFunc(int x, int y, MainActivity context) {
@@ -110,6 +118,32 @@ public class WrapPDFFunc {
 				nPDFJsPlatform);
 		EMBJavaSupport.FPDFJsPlatformSetFormFillerInfo(nPDFJsPlatform,
 				nPDFFormFillerInfo);
+		
+		//PSI
+		if (mainView == null){
+			//return EMBJavaSupport.EMBJavaSupport_RESULT_ERROR;
+		}
+		fxPsi = new EMBJavaSupport().new CPDFPSI(mainView);
+		if (fxPsi == null){
+			//return EMBJavaSupport.EMBJavaSupport_RESULT_ERROR;
+		}
+		nPSICallback = EMBJavaSupport.FPSIInitAppCallback(fxPsi);
+		nPSIHandle = EMBJavaSupport.FPSIInitEnvironment(nPSICallback, true);
+		if (nPSIHandle == 0){
+			//return EMBJavaSupport.EMBJavaSupport_RESULT_ERROR;
+		}
+		int nRet = EMBJavaSupport.FPSISetInkDiameter(nPSIHandle, 20);
+		if (nRet != 0){
+			//return EMBJavaSupport.EMBJavaSupport_RESULT_ERROR;
+		}
+		nRet = EMBJavaSupport.FPSIInitCanvas(nPSIHandle, nDisplayX, nDisplayY);
+		if (nRet != 0){
+			//return EMBJavaSupport.EMBJavaSupport_RESULT_ERROR;
+		}			
+		nRet = EMBJavaSupport.FPSISetInkColor(nPSIHandle, 255);
+		if (nRet != 0){
+			//return EMBJavaSupport.EMBJavaSupport_RESULT_ERROR;
+		}	
 
 		return true;
 	}
@@ -120,7 +154,19 @@ public class WrapPDFFunc {
 	}
 
 	public FoxitDoc createFoxitDoc(String fileName, String password) {
-		return new FoxitDoc(fileName, password);
+		FoxitDoc doc = new FoxitDoc(fileName, password);
+		this.nPDFDocHandler = doc.getDocumentHandle();
+		nPDFFormHandler = EMBJavaSupport.FPDFDocInitFormFillEnviroument(
+				nPDFDocHandler, nPDFFormFillerInfo);{
+					if(nPDFFormHandler == -1){
+						Log.e("error", "get pdf form handler error");
+					}
+				}
+				
+			
+				
+		return doc;
+		
 	}
 
 	public void SetFontFileMap(String strFontFilePath)
@@ -128,16 +174,6 @@ public class WrapPDFFunc {
 		EMBJavaSupport.FSSetFileFontmap(strFontFilePath);
 	}
 
-	/** Init EMB SDK */
-	public boolean InitFoxitFixedMemory() throws parameterException,
-			invalidLicenseException {
-		EMBJavaSupport.FSMemInitFixedMemory(5 * 1024 * 1024);
-		EMBJavaSupport.FSInitLibrary(0);
-		EMBJavaSupport.FSUnlock("SDKEDTEMP",
-				"3C86F25880658927118E766271BEB68454E49DFD");
-
-		return true;
-	}
 
 	/** Destroy EMB SDK */
 	public int DestroyFoxitFixedMemory() {
@@ -177,26 +213,6 @@ public class WrapPDFFunc {
 		EMBJavaSupport.FSFontLoadKoreaCMap();
 	}
 
-	/** Load PDF Document. */
-	public int InitPDFDoc(int nPDFDocHandler) {
-
-		/** Init a FS_FileRead structure */
-		// try {
-		// nFileRead = EMBJavaSupport.FSFileReadAlloc(fileName);
-		// nPDFDocHandler = EMBJavaSupport.FPDFDocLoad(nFileRead, password);
-		// if (nPDFDocHandler == 0) {
-		// return EMBJavaSupport.EMBJavaSupport_RESULT_ERROR;
-		// }
-		// } catch (Exception e) {
-		// e.printStackTrace();
-		// }
-		this.nPDFDocHandler = nPDFDocHandler;
-		nPDFFormHandler = EMBJavaSupport.FPDFDocInitFormFillEnviroument(
-				nPDFDocHandler, nPDFFormFillerInfo);
-		if (nPDFFormHandler == 0)
-			return -1;
-		return EMBJavaSupport.EMBJavaSupport_RESULT_SUCCESS;
-	}
 
 	/** Close PDF Document. */
 	public int ClosePDFDoc() {
@@ -204,13 +220,33 @@ public class WrapPDFFunc {
 		if (nPDFDocHandler == 0) {
 			return EMBJavaSupport.EMBJavaSupport_RESULT_ERROR;
 		}
+		
+		///formfiller implemention
+		EMBJavaSupport.FPDFDocExitFormFillEnviroument(nPDFFormHandler);
+		nPDFFormHandler = 0;
+		
+		EMBJavaSupport.FPDFFormFillerInfoRelease(nPDFFormFillerInfo);
+		nPDFFormFillerInfo = 0;
+		
+		EMBJavaSupport.FPDFJsPlatformRelease(nPDFJsPlatform);
+		nPDFJsPlatform = 0;
+		//
+		
+		///PSI		
+		if (nPSIHandle == 0){
+			return EMBJavaSupport.EMBJavaSupport_RESULT_ERROR;
+		}
+		EMBJavaSupport.FPSIDestroyEnvironment(nPSIHandle);
+		nPSIHandle = 0;
+		EMBJavaSupport.FPSIReleaseAppCallback(nPSICallback);
+		nPSICallback = 0;
+		//
 
 		try {
 			EMBJavaSupport.FPDFDocClose(nPDFDocHandler);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		nPDFDocHandler = 0;
 
 		EMBJavaSupport.FSFileReadRelease(nFileRead);
 		nFileRead = 0;
@@ -226,11 +262,13 @@ public class WrapPDFFunc {
 		}
 
 		try {
+			if(nPDFCurPageHandler <= 0){
 			nPDFCurPageHandler = EMBJavaSupport.FPDFPageLoad(nPDFDocHandler,
 					nPageIndex);
 
 			if (nPDFCurPageHandler == 0) {
 				return EMBJavaSupport.EMBJavaSupport_RESULT_ERROR;
+			}
 			}
 
 			EMBJavaSupport.FPDFPageStartParse(nPDFCurPageHandler, 0, 0);
@@ -251,7 +289,9 @@ public class WrapPDFFunc {
 		}
 
 		try {
-			EMBJavaSupport.FPDFPageClose(nPDFCurPageHandler);
+			EMBJavaSupport.FPDFFormFillOnBeforeClosePage(nPDFFormHandler, nPDFCurPageHandler);
+			nPDFCurPageHandler = 0;
+			//EMBJavaSupport.FPDFPageClose(nPDFCurPageHandler);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -286,7 +326,7 @@ public class WrapPDFFunc {
 		return nPDFFormHandler;
 	}
 
-	public void setPageHandler(int pageHandler) {
+	public void setCurPDFPageHandler(int pageHandler) {
 		this.nPDFCurPageHandler = pageHandler;
 	}
 
@@ -307,13 +347,17 @@ public class WrapPDFFunc {
 			EMBJavaSupport.FPDFRenderPageStart(dib, nPDFCurPageHandler,
 					-rect.left, -rect.top, nSizex, nSizey, 0, 0, null, 0);
 
+	EMBJavaSupport.FPSIRender(nPSIHandle, dib, 0, 0, rect.right-rect.left, rect.bottom-rect.top, rect.left, rect.top);
+			
+			// 
 			// /formfiller implemention
 			if (nPDFFormHandler == 0)
 				return null;
-			EMBJavaSupport.FPDFFormFillDraw(nPDFFormHandler, dib,
+			else
+				EMBJavaSupport.FPDFFormFillDraw(nPDFFormHandler, dib,
 					nPDFCurPageHandler, -rect.left, -rect.top, nSizex, nSizey,
 					0, 0);
-			// /
+		
 
 			byte[] bmpbuf = EMBJavaSupport.FSBitmapGetBuffer(dib);
 
@@ -331,34 +375,37 @@ public class WrapPDFFunc {
 
 	/** Render pdf to bitmap. */
 	public Bitmap getPageBitmap(int displayWidth, int displayHeight) {
-		if (nPDFCurPageHandler == 0) {
+		if(nPDFCurPageHandler == 0) {
 			return null;
-		}
-
+		} 
+								
 		Bitmap bm;
-		bm = Bitmap.createBitmap(displayWidth, displayHeight,
-				Bitmap.Config.ARGB_8888);
-
+		bm = Bitmap.createBitmap(displayWidth,displayHeight,Bitmap.Config.ARGB_8888);
+		
 		int dib;
 		try {
-			dib = EMBJavaSupport.FSBitmapCreate(displayWidth, displayHeight, 7,
-					null, 0);
+			dib = EMBJavaSupport.FSBitmapCreate(displayWidth, displayHeight, 7, null, 0);
+	
+		EMBJavaSupport.FSBitmapFillColor(dib,0xff);
+		EMBJavaSupport.FPDFRenderPageStart(dib, nPDFCurPageHandler, 0, 0, displayWidth, displayHeight, 0, 0, null, 0);
 
-			EMBJavaSupport.FSBitmapFillColor(dib, 0xff);
-			EMBJavaSupport.FPDFRenderPageStart(dib, nPDFCurPageHandler, 0, 0,
-					displayWidth, displayHeight, 0, 1, null, 0);
-
-			byte[] bmpbuf = EMBJavaSupport.FSBitmapGetBuffer(dib);
-
-			ByteBuffer bmBuffer = ByteBuffer.wrap(bmpbuf);
-			bm.copyPixelsFromBuffer(bmBuffer);
-
-			EMBJavaSupport.FSBitmapDestroy(dib);
+		
+//		///formfiller implemention
+//		if (nPDFFormHandler == 0)
+//			return null;
+//		EMBJavaSupport.FPDFFormFillDraw(nPDFFormHandler, dib, nPDFCurPageHandler, 0, 0, displayWidth, displayHeight, 0, 0);
+//		///
+		
+		byte[] bmpbuf=EMBJavaSupport.FSBitmapGetBuffer(dib);
+		
+		ByteBuffer bmBuffer = ByteBuffer.wrap(bmpbuf); 
+		bm.copyPixelsFromBuffer(bmBuffer);
+		
+		EMBJavaSupport.FSBitmapDestroy(dib);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 		return bm;
 	}
 
@@ -527,6 +574,10 @@ public class WrapPDFFunc {
 				annot_index);
 		arrIndexList.remove(nSize - 1);
 		return nRet;
+	}
+	
+	public int getCurPSIHandle(){
+		return nPSIHandle;
 	}
 
 }

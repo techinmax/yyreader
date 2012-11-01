@@ -21,8 +21,6 @@ import android.view.View;
 import android.view.WindowManager;
 import android.view.View.OnTouchListener;
 import android.view.Window;
-import android.widget.ImageSwitcher;
-
 import com.foxitsdk.exception.memoryException;
 import com.foxitsdk.service.FoxitDoc;
 import com.foxitsdk.service.WrapPDFFunc;
@@ -31,11 +29,11 @@ import com.yangyang.reader.util.Constant;
 import com.yangyang.reader.util.ZoomStatus;
 import com.yangyang.reader.view.OpenFileDialog.CallbackBundle;
 
+
 public class MainActivity extends Activity implements OnGestureListener,
 		OnDoubleTapListener, OnTouchListener {
 
-	private PDFView imageView;
-	// private ImageSwitcher switcher;
+	private PDFView pdfView;
 	private GestureDetector detector;
 	private static String TAG = "YYReaer";
 	private final static int openFileDialogId = 10212739;
@@ -57,42 +55,26 @@ public class MainActivity extends Activity implements OnGestureListener,
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
 				WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-		imageView = new PDFView(this);
-		setContentView(imageView);
-		// imageView = (ImageView) findViewById(R.id.imageView);
-		// switcher = (ImageSwitcher) findViewById(R.id.imageSwitcher);
+		pdfView = new PDFView(this);
+		setContentView(pdfView);
 		detector = new GestureDetector(this);
 		detector.setOnDoubleTapListener(this);
-		// switcher.addView(imageView);
-		// switcher.setBackgroundColor(0);
-		imageView.setOnTouchListener(this);
-		/**
-		 * super.onCreate(savedInstanceState); imageView = new
-		 * PDFView(getApplicationContext());
-		 * getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-		 * WindowManager.LayoutParams.FLAG_FULLSCREEN);
-		 * this.requestWindowFeature(Window.FEATURE_NO_TITLE);
-		 * getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
-		 * WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-		 * setContentView(imageView); detector = new GestureDetector(this);
-		 * detector.setOnDoubleTapListener(this);
-		 */
+		pdfView.setOnTouchListener(this);
 
-		// openPDF();
+		//openPDF("/mnt/sdcard/FoxitForm.pdf");
 
 	}
 
 	public void openPDF(String fileName) {
-		// this.contentTop = getWindow().findViewById(Window.ID_ANDROID_CONTENT)
-		// .getTop();
 		try {
-			// String fileName = "/data/data/com.foxitsample.service/demo.pdf";
-			// String fileName = "/mnt/sdcard/readme.pdf";
 			String strFontFilePath = "/mnt/sdcard/DroidSansFallback.ttf";
 			String password = "";
 			int initialMemory = 5 * 1024 * 1024;
 
 			func = new WrapPDFFunc(this);
+			Display display = getWindowManager().getDefaultDisplay();
+			func.setDisplaySize(display.getWidth(), display.getHeight());
+			pdfView.InitView(func);
 			func.InitFoxitFixedMemory(initialMemory);
 			func.LoadJbig2Decoder();
 			func.LoadJpeg2000Decoder();
@@ -102,14 +84,9 @@ public class MainActivity extends Activity implements OnGestureListener,
 			func.SetFontFileMap(strFontFilePath);
 
 			myDoc = func.createFoxitDoc(fileName, password);
-			func.InitPDFDoc(myDoc.getDocumentHandle());
 			myDoc.CountPages();
 			showCurrentPage();
 		} catch (Exception e) {
-			/*
-			 * In this demo, we decide do nothing for exceptions however, you
-			 * will want to handle exceptions in some way
-			 */
 			postToLog(e.getMessage());
 		}
 	}
@@ -123,25 +100,29 @@ public class MainActivity extends Activity implements OnGestureListener,
 					display.getHeight());
 			func.setDisplaySize(display.getWidth(), display.getHeight());
 		}
-
-		if (!this.editMode)
-			imageView.setPDFBitmap(myDoc.getPageBitmap(currentPage,
+		func.setCurPDFPageHandler(myDoc.getPageHandler(currentPage));
+		if (!this.editMode){
+			pdfView.setPDFBitmap(myDoc.getPageBitmap(currentPage,
 					this.zoomStatus.getWidth(), this.zoomStatus.getHeight(), 0,
 					0), this.zoomStatus.getDisplayWidth(), this.zoomStatus
 					.getDisplayHeight());
-		else
-			imageView.setPDFBitmap(
-					myDoc.getPageBitmap(currentPage,
-							this.zoomStatus.getDisplayWidth(),
-							this.zoomStatus.getDisplayHeight(), 0, 0),
+			
+		}
+		else{
+			func.InitPDFPage(currentPage);
+			pdfView.setPDFBitmap(
+					func.getPageBitmap(this.zoomStatus.getDisplayWidth(),this.zoomStatus.getDisplayHeight()),
 					this.zoomStatus.getDisplayWidth(),
 					this.zoomStatus.getDisplayHeight());
-		func.setPageHandler(myDoc.getPageHandler(currentPage));
+		}
+		
 		// imageView.invalidate();
-		imageView.OnDraw();
+		pdfView.OnDraw();
 	}
 
 	public void invalidate(float left, float top, float right, float bottom) {
+		if (right - left == 0 || bottom - top == 0)
+			return;
 		int l, t, r, b;
 		RectangleF rect = new EMBJavaSupport().new RectangleF();
 		rect.left = left;
@@ -156,11 +137,11 @@ public class MainActivity extends Activity implements OnGestureListener,
 		r = (int) rect.right;
 		b = (int) rect.bottom;
 		Rect rc = new Rect(l, t, r, b);
-		imageView.setDirtyRect(l, t, r, b);
-		imageView.setDirtyBitmap(func.getDirtyBitmap(rc,
+		pdfView.setDirtyRect(l, t, r, b);
+		pdfView.setDirtyBitmap(func.getDirtyBitmap(rc,
 				this.zoomStatus.getDisplayWidth(),
 				this.zoomStatus.getDisplayHeight()));
-		imageView.OnDraw();
+		pdfView.OnDraw();
 
 	}
 
@@ -247,7 +228,7 @@ public class MainActivity extends Activity implements OnGestureListener,
 
 	public void onLongPress(MotionEvent e) {
 		// TODO Auto-generated method stub
-		this.openWebLink((int) e.getX(), (int) e.getY());
+		this.openLink((int) e.getX(), (int) e.getY());
 	}
 
 	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX,
@@ -331,18 +312,22 @@ public class MainActivity extends Activity implements OnGestureListener,
 				this.currentPage++;
 			break;
 		case R.id.link:
-			this.openWebLink(0, 0);
+			this.openLink(0, 0);
 			return true;
 		case R.id.edit:
 			this.editMode = !this.editMode;
 			item.setTitle(this.editMode ? "unlock" : "edit");
+			if(!this.editMode){
+				this.func.ClosePDFPage();
+				//this.myDoc.closePDFPage(currentPage);
+			}
 			break;
 		}
 		this.showCurrentPage();
 		return super.onMenuItemSelected(featureId, item);
 	}
 
-	private void openWebLink(int x, int y) {
+	private void openLink(int x, int y) {
 		PointF point = new EMBJavaSupport().new PointF();
 		point.x = x;
 		point.y = y;
@@ -393,6 +378,7 @@ public class MainActivity extends Activity implements OnGestureListener,
 	@Override
 	protected void onDestroy() {
 		try {
+			func.ClosePDFDoc();
 			myDoc.close();
 			func.DestroyFoxitFixedMemory();
 		} catch (Exception e) {
@@ -468,7 +454,30 @@ public class MainActivity extends Activity implements OnGestureListener,
 			}
 			return true;
 		}
+		{
+		int actionType=event.getAction()&MotionEvent.ACTION_MASK;
+		int actionId=event.getAction()&MotionEvent.ACTION_POINTER_ID_MASK;
+		actionId=actionId>>8;  
+		
+		float x = event.getX();
+		float y = event.getY();		
+		
+		switch(actionType){
+		case MotionEvent.ACTION_MOVE://
+			
+			AddPoint(EMBJavaSupport.PSI_ACTION_MOVE, x, y, 1f, EMBJavaSupport.FXG_PT_LINETO);
+			break;
+		case MotionEvent.ACTION_DOWN:	//	
+			
+			AddPoint(EMBJavaSupport.PSI_ACTION_DOWN, x, y, 1f, EMBJavaSupport.FXG_PT_MOVETO);
+			break;
+		case MotionEvent.ACTION_UP:	//
+			
+			AddPoint(EMBJavaSupport.PSI_ACTION_UP, x, y, 1f, EMBJavaSupport.FXG_PT_LINETO | EMBJavaSupport.FXG_PT_ENDPATH);
+			break;
+		}
 		return false;
+		}
 	}
 
 	public void createAndroidTextField(String text) {
@@ -485,14 +494,19 @@ public class MainActivity extends Activity implements OnGestureListener,
 		if (resultCode == RESULT_OK && requestCode == 0) {
 			Bundle bundle = data.getBundleExtra("Result");
 			String text = bundle.getString("ResultValue");
-			Log.i("info", text);
+			Log.i("info","info:" + text);
 			String result = ""
 					+ EMBJavaSupport.FPDFFormFillOnSetText(
 							func.getPDFFormHandler(),
 							func.getCurPDFPageHandler(), text, 0);
-			Log.i("result:", result);
+			Log.i("handler","result:" + func.getPDFFormHandler() + "," + func.getCurPDFPageHandler());
+			Log.i("result", "result:" + result);
 		}
 		super.onActivityResult(requestCode, resultCode, data);
 		// this.showCurrentPage();
 	}
+	
+	 public void AddPoint(int nActionType, float x, float y, float nPressures, int flag){
+	    	pdfView.addAction(nActionType, x, y, nPressures, flag);
+	    }
 }

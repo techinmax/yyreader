@@ -3,6 +3,8 @@ package FoxitEMBSDK;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import android.util.Log;
+
 import com.foxitsdk.exception.errorException;
 import com.foxitsdk.exception.fileAccessException;
 import com.foxitsdk.exception.formatException;
@@ -29,6 +31,14 @@ public class EMBJavaSupport {
 
 	public final static int EMBJavaSupport_SAVEFLAG_INCREMENTAL = 1;
 	public final static int EMBJavaSupport_SVAEFLAG_NOORIGINAL = 2;
+	
+	public static final int FXG_PT_LINETO = 2;
+	public static final int FXG_PT_MOVETO = 6;
+    public static final int FXG_PT_ENDPATH = 8;
+    
+    public static final	int PSI_ACTION_DOWN = 1;
+    public static final int PSI_ACTION_UP = 2;
+    public static final int PSI_ACTION_MOVE = 3;
 
 	private final static int TIMER_EVENT_ID = 10;
 
@@ -404,6 +414,9 @@ public class EMBJavaSupport {
 
 	public static native void FPDFFormFillOnAfterLoadPage(int nFormHandler,
 			int page);
+	
+	public static native void FPDFFormFillOnBeforeClosePage(int nFormHandler,
+			int page);
 
 	public static native void FPDFFormFillDraw(int nFormHandler, int dib,
 			int page, int startx, int starty, int sizex, int sizey, int rotate,
@@ -438,5 +451,41 @@ public class EMBJavaSupport {
 
 	public static native void FPDFExecCallBack(int callbackaddr,
 			boolean newThread);
+	
+////PSI
+	public class CPDFPSI{
+		private MainActivity mainView = null;
+		
+		public CPDFPSI(MainActivity view){
+			mainView = view;
+		}
+		
+		public void FPSI_Invalidate(int left, int top, int right, int bottom){
+			Log.e("xxxxxxxxxxjavasupport","FPSI_Invalidate");
+			if (mainView != null){
+				mainView.invalidate(left, top, right, bottom);
+			}
+		}
+		
+		public float FPSI_GetOpacity(){
+			return 1.0f;
+		}
+		
+	}
+	
+	public static native int FPSIInitAppCallback(CPDFPSI pCallBack);
+	public static native void FPSIReleaseAppCallback(int nCallback);
+	
+	public static native int FPSIInitEnvironment(int nCallback, boolean bSimulate);
+	public static native void FPSIDestroyEnvironment(int nPSIHandler);
+	
+	public static native int FPSIInitCanvas(int nPSIHandler, int width, int height);
+	public static native int FPSISetInkColor(int nPSIHandler, long color);
+	public static native int FPSISetInkDiameter(int nPSIHandler, int diameter);
+	public static native int FPSIAddPoint(int nPSIHandler, float x, float y, float pressure, int flag);
+	public static native int FPSIRender(int nPSIHandler, int bitmap, int left, int top, int right, int bottom, int src_left, int src_top);
+//	public static native int FPSIRenderWithBitmap(int nPSIHandle, Bitmap bitmap, int left, int top, int right, int bottom);
+	public static native int FPDFPage_GeneratePSIAnnot(int nPSIHandler, int page, Rectangle pageRect, float left, float top, float right, float bottom);
+
 
 }

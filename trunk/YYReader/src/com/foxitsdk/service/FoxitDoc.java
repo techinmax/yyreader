@@ -60,6 +60,7 @@ public class FoxitDoc {
 	}
 
 	public int getPageHandler(int pageIndex) {
+		if(this.pageHandles[pageIndex] <= 0) this.InitPage(pageIndex);
 		return this.pageHandles[pageIndex];
 	}
 
@@ -120,6 +121,17 @@ public class FoxitDoc {
 
 	protected void postToLog(String msg) {
 		Log.v(TAG, msg);
+	}
+	
+	public void closePDFPage(int pageIndex){
+		if(pageHandles[pageIndex] <= 0) return;
+		try {
+			EMBJavaSupport.FPDFPageClose(pageHandles[pageIndex]);
+		} catch (parameterException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		pageHandles[pageIndex] =0;
 	}
 
 	/* user functions */
