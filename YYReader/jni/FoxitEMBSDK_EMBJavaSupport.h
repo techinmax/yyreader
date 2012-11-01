@@ -519,6 +519,14 @@ JNIEXPORT void JNICALL Java_FoxitEMBSDK_EMBJavaSupport_FPDFFormFillOnAfterLoadPa
 
 /*
  * Class:     FoxitEMBSDK_EMBJavaSupport
+ * Method:    FPDFFormFillOnBeforeClosePage
+ * Signature: (II)V
+ */
+JNIEXPORT void JNICALL Java_FoxitEMBSDK_EMBJavaSupport_FPDFFormFillOnBeforeClosePage
+  (JNIEnv *, jclass, jint, jint);
+
+/*
+ * Class:     FoxitEMBSDK_EMBJavaSupport
  * Method:    FPDFFormFillDraw
  * Signature: (IIIIIIIII)V
  */

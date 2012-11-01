@@ -8,6 +8,6 @@
     <string name="openfile">openfile</string>
     <string name="previous">previous</string>
     <string name="next">next</string>
-    <string name="hint">Please input text!</string>
+    <string name="hint">Please enter the text!</string>
 
 </resources>

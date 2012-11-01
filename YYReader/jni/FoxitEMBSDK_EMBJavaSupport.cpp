@@ -1401,6 +1401,18 @@ JNIEXPORT void JNICALL Java_FoxitEMBSDK_EMBJavaSupport_FPDFFormFillOnAfterLoadPa
 	LOGI("Java_FoxitEMBSDK_EMBJavaSupport_FPDF_1FormFill_1OnAfterLoadPage RET IS  %x",ret);
 }
 
+JNIEXPORT void JNICALL Java_FoxitEMBSDK_EMBJavaSupport_FPDFFormFillOnBeforeClosePage
+(JNIEnv *pEnv, jclass cls, jint nFormHandler,jint page ){
+	if (page == 0 || nFormHandler == 0)
+			return;
+		FPDF_PAGE pPage = (FPDF_PAGE)page;
+		FPDF_FORMENV formHandler = (FPDF_FORMENV)nFormHandler;
+
+		LOGI("Java_FoxitEMBSDK_EMBJavaSupport_FPDF_1FormFill_1FPDFFormFillOnBeforeClosePage RET IS ");
+		int ret = FPDF_FormFill_OnBeforeClosePage(formHandler,pPage);
+		LOGI("Java_FoxitEMBSDK_EMBJavaSupport_FPDF_1FormFill_1FPDFFormFillOnBeforeClosePage RET IS  %x",ret);
+}
+
 JNIEXPORT void JNICALL Java_FoxitEMBSDK_EMBJavaSupport_FPDFFormFillDraw
   (JNIEnv *pEnv, jclass cls, jint nFormHandler, jint dib, jint page, jint startx, jint starty, jint sizex, jint sizey, jint rotate, jint flags)
 {
@@ -1556,7 +1568,8 @@ JNIEXPORT jboolean JNICALL Java_FoxitEMBSDK_EMBJavaSupport_FPDFFormFillOnSetText
 	memset((void*)pText, '\0', sizeof(const unsigned short)*nLen);
 	memcpy((void*)pText, pTempEnv->GetStringChars(text, NULL), nLen*sizeof(const unsigned short));
 	pTempEnv->ReleaseStringChars(text, pText);
-	FS_BOOL bRet = FPDF_FormFill_OnSetText(formHandler, pPage, pText, nLen, evenflag);
+	int bRet = FPDF_FormFill_OnSetText(formHandler, pPage, pText, nLen, evenflag);
+	LOGI("formhandler:%d,page:%d,text:%s,result: %d",formHandler,pPage,pText,bRet );
 	return (jboolean)bRet;
 }
 
